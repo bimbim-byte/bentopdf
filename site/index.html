@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BentoPDF - PDF Tools</title>
+<style>
+  :root {
+    --bg: #111827;
+    --card: #1f2937;
+    --border: #374151;
+    --border-hover: #4f46e5;
+    --accent: #818cf8;
+    --text: #d1d5db;
+    --text-dim: #9ca3af;
+    --text-faint: #6b7280;
+    --header-h: 9rem;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  [hidden] { display: none !important; }
+
+  body {
+    margin: 0;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ---------- header ---------- */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background-color: rgba(17, 24, 39, 0.96);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .bar {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .brand {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #fff;
+    text-decoration: none;
+    letter-spacing: -0.01em;
+  }
+  .brand em { font-style: normal; color: var(--accent); }
+
+  .search-wrap { position: relative; width: 100%; }
+  .search-wrap .search-icon {
+    position: absolute;
+    left: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.1rem;
+    height: 1.1rem;
+    color: var(--text-dim);
+    pointer-events: none;
+  }
+
+  #search-bar {
+    width: 100%;
+    padding: 0.65rem 4.25rem 0.65rem 2.6rem;
+    background-color: var(--card);
+    color: #fff;
+    border: 1px solid #4b5563;
+    border-radius: 0.5rem;
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  #search-bar::placeholder { color: var(--text-dim); }
+  #search-bar:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+  }
+
+  kbd {
+    position: absolute;
+    right: 0.45rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: #111827;
+    border: 1px solid var(--border);
+    border-radius: 0.375rem;
+    padding: 0.2rem 0.45rem;
+    font-family: inherit;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  /* ---------- category nav ---------- */
+  .catnav {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding: 0 1rem 0.75rem;
+    max-width: 80rem;
+    margin: 0 auto;
+    scrollbar-width: none;
+  }
+  .catnav::-webkit-scrollbar { display: none; }
+
+  .catnav a {
+    flex: none;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background-color: var(--card);
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+  }
+  .catnav a:hover { color: #fff; border-color: var(--border-hover); }
+  .catnav a[aria-current="true"] {
+    color: #fff;
+    background-color: rgba(79, 70, 229, 0.22);
+    border-color: #6366f1;
+  }
+  .catnav a:focus-visible,
+  .brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- content ---------- */
+  .wrap { max-width: 80rem; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
+
+  .status {
+    margin: 0 0 1.5rem;
+    font-size: 0.78rem;
+    color: var(--text-faint);
+  }
+
+  .category { scroll-margin-top: calc(var(--header-h) + 0.75rem); }
+  .category + .category { margin-top: 2.5rem; }
+
+  .category h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0 0 1rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+  }
+  .category h2 .count {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: rgba(79, 70, 229, 0.15);
+    border: 1px solid rgba(129, 140, 248, 0.3);
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .tool-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    text-decoration: none;
+    color: inherit;
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s;
+  }
+  .tool-card:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px #0003, 0 4px 6px -2px #0000001a;
+  }
+  .tool-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .ic {
+    width: 2rem;
+    height: 2rem;
+    margin-bottom: 0.7rem;
+    color: var(--accent);
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex: none;
+  }
+
+  .tool-card h3 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.3;
+  }
+  .tool-card p {
+    margin: 0.3rem 0 0;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: var(--text-dim);
+  }
+
+  #no-results {
+    text-align: center;
+    color: var(--text-faint);
+    padding: 4rem 1rem;
+    font-size: 0.92rem;
+  }
+  #no-results strong { color: var(--text); }
+
+  @media (min-width: 640px) {
+    .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (min-width: 768px) {
+    .bar {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .search-wrap { max-width: 26rem; }
+    .wrap { padding: 2rem 2rem 5rem; }
+    .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; }
+  }
+  @media (min-width: 1024px) {
+    .grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1.5rem; }
+  }
+</style>
+</head>
+<body id="top">
+
+<!-- ===== icon sprite (offline, no external request) ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8 13h8M8 17h5"/></symbol>
+  <symbol id="i-file-code" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m10.5 12.5-2 2.5 2 2.5M13.5 12.5l2 2.5-2 2.5"/></symbol>
+  <symbol id="i-file-x" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9.5 13 5 5M14.5 13l-5 5"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m3 17 5-5 4 4 3-3 6 6"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 6C10 4.6 7 4 4 4v14c3 0 6 .6 8 2 2-1.4 5-2 8-2V4c-3 0-6 .6-8 2z"/><path d="M12 6v14"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 7.5-2"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4-3 7.2-7 9-4-1.8-7-5-7-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20h4L20 8l-4-4L4 16z"/><path d="m14 6 4 4"/></symbol>
+  <symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M2 6h14a2 2 0 0 1 2 2v14"/></symbol>
+  <symbol id="i-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M20 20 8.1 8.1"/></symbol>
+  <symbol id="i-merge" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="13" rx="2"/><path d="M8 6V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="m6 7 1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+  <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 1 0 5.3 5.3l-9 9a2.5 2.5 0 0 1-3.5-3.5z"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 0-18 0"/><path d="M12 12l4-4"/><path d="M3 12h2M19 12h2M12 21v-2"/></symbol>
+  <symbol id="i-ruler" viewBox="0 0 24 24"><path d="M4 17 17 4l3 3L7 20z"/><path d="m8 13 2 2M11 10l2 2"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M4 21h16"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 17V5"/><path d="m7 10 5-5 5 5"/><path d="M4 21h16"/></symbol>
+  <symbol id="i-palette" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="9" r="1.2"/><circle cx="9.5" cy="15" r="1.2"/></symbol>
+  <symbol id="i-broom" viewBox="0 0 24 24"><path d="M7 21h10"/><path d="m5 16 6-6 5 5-6 6H8z"/><path d="m14 6 4 4"/></symbol>
+  <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></symbol>
+  <symbol id="i-mobile" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+  <symbol id="i-presentation" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="12" rx="2"/><path d="M12 15v4M8 21l4-2 4 2"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="m12 3 2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/><path d="m19 16 1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></symbol>
+  <symbol id="i-barcode" viewBox="0 0 24 24"><path d="M4 5v14M7.5 5v14M11 5v9M15 5v14M18.5 5v9"/></symbol>
+  <symbol id="i-link-break" viewBox="0 0 24 24"><path d="M9 15.5 7 17.5a3.5 3.5 0 0 1-5-5l2-2"/><path d="M15 8.5l2-2a3.5 3.5 0 0 1 5 5l-2 2"/><path d="M4 4l16 16"/></symbol>
+  <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M4 6h4l8 12h4"/><path d="m17 15 3 3-3 3"/><path d="M4 18h4l2-3"/><path d="m17 3 3 3-3 3"/></symbol>
+  <symbol id="i-columns" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></symbol>
+  <symbol id="i-stamp" viewBox="0 0 24 24"><path d="M5 20h14"/><path d="M8 20v-3h8v3"/><rect x="9" y="9" width="6" height="5" rx="1"/><path d="M10 9V7a2 2 0 1 1 4 0v2"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4.5L6 21z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 6 6 10a6 6 0 0 1-12 0c0-4 6-10 6-10z"/></symbol>
+  <symbol id="i-circle-half" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18a9 9 0 0 0 0-18z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-eyedropper" viewBox="0 0 24 24"><path d="m14 5 5 5"/><path d="M17 8 7 18l-3 3 3-3L17 8z"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 6h16M12 6v12M9 18h6"/></symbol>
+  <symbol id="i-notepad" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></symbol>
+  <symbol id="i-branch" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="12" r="2"/><path d="M6 8v8M8 6h6a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-paperclip" viewBox="0 0 24 24"><path d="M20 11.5 11.5 20a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M4 12h16"/></symbol>
+  <symbol id="i-zip" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M10 4.5v2M12 7v2M10 9.5v2"/></symbol>
+</svg>
+
+<!-- ===== sticky header: brand + search + category nav ===== -->
+<header class="topbar" id="topbar">
+  <div class="bar">
+    <a class="brand" href="#top">Bento<em>PDF</em></a>
+    <div class="search-wrap">
+      <svg class="search-icon" aria-hidden="true"><use href="#i-search"/></svg>
+      <label for="search-bar" hidden>Search tools</label>
+      <input type="text" id="search-bar" autocomplete="off" spellcheck="false"
+             placeholder="Search for a tool (e.g., 'split', 'organize'...)">
+      <kbd id="shortcut-hint">Ctrl K</kbd>
+    </div>
+  </div>
+  <nav class="catnav" id="catnav" aria-label="Tool categories"></nav>
+</header>
+
+<main class="wrap">
+  <p class="status" id="status" aria-live="polite"></p>
+  <div id="sections"></div>
+  <p id="no-results" hidden>No tool matches <strong id="no-results-term"></strong>. Try another keyword.</p>
+</main>
+
+<script>
+'use strict';
+
+/* Link tool memakai path relatif terhadap halaman ini, sehingga otomatis
+   mengikuti IP / host / domain apa pun. Tidak ada IP yang ditulis tetap. */
+var BASE = '';
+
+var CATS = [
+  { name: 'Popular Tools',      id: 'cat-popular'  },
+  { name: 'Edit & Annotate',    id: 'cat-edit'     },
+  { name: 'Convert to PDF',     id: 'cat-to'       },
+  { name: 'Convert from PDF',   id: 'cat-from'     },
+  { name: 'Organize & Manage',  id: 'cat-organize' },
+  { name: 'Optimize & Repair',  id: 'cat-optimize' },
+  { name: 'Secure PDF',         id: 'cat-secure'   }
+];
+
+var TOOLS = [
+  /* --- Popular Tools --- */
+  { c:'Popular Tools', n:'PDF Multi Tool', d:'Merge, Split, Organize, Delete, Rotate, Add Blank Pages, Extract and Duplicate in an unified interface.', i:'pen', s:'pdf-multi-tool.html' },
+  { c:'Popular Tools', n:'Merge PDF', d:'Combine multiple PDFs into one file. Preserves Bookmarks.', i:'merge', s:'merge-pdf.html' },
+  { c:'Popular Tools', n:'Split PDF', d:'Extract a range of pages into a new PDF.', i:'scissors', s:'split-pdf.html' },
+  { c:'Popular Tools', n:'Compress PDF', d:'Reduce the file size of your PDF.', i:'gauge', s:'compress-pdf.html' },
+  { c:'Popular Tools', n:'PDF Editor', d:'Annotate, highlight, redact, comment, add shapes/images, search, and view PDFs.', i:'pen', s:'edit-pdf.html' },
+  { c:'Popular Tools', n:'JPG to PDF', d:'Create a PDF from JPG, JPEG, and JPEG2000 (JP2/JPX) images.', i:'image', s:'jpg-to-pdf.html' },
+  { c:'Popular Tools', n:'Sign PDF', d:'Draw, type, or upload your signature.', i:'pen', s:'sign-pdf.html' },
+  { c:'Popular Tools', n:'Crop PDF', d:'Trim the margins of every page in your PDF.', i:'crop', s:'crop-pdf.html' },
+  { c:'Popular Tools', n:'Extract Pages', d:'Save a selection of pages as new files.', i:'grid', s:'extract-pages.html' },
+  { c:'Popular Tools', n:'Duplicate & Organize', d:'Duplicate, reorder, and delete pages.', i:'layers', s:'organize-pdf.html' },
+  { c:'Popular Tools', n:'Delete Pages', d:'Remove specific pages from your document.', i:'trash', s:'delete-pages.html' },
+
+  /* --- Edit & Annotate --- */
+  { c:'Edit & Annotate', n:'PDF Editor', d:'Annotate, highlight, redact, comment, add shapes/images, search, and view PDFs.', i:'pen', s:'edit-pdf.html' },
+  { c:'Edit & Annotate', n:'Edit Bookmarks', d:'Add, edit, import, delete and extract PDF bookmarks.', i:'bookmark', s:'bookmark.html' },
+  { c:'Edit & Annotate', n:'Table of Contents', d:'Generate a table of contents page from PDF bookmarks.', i:'list', s:'table-of-contents.html' },
+  { c:'Edit & Annotate', n:'Page Numbers', d:'Insert page numbers into your document.', i:'list', s:'page-numbers.html' },
+  { c:'Edit & Annotate', n:'Add Watermark', d:'Stamp text or an image over your PDF pages.', i:'drop', s:'add-watermark.html' },
+  { c:'Edit & Annotate', n:'Header & Footer', d:'Add text to the top and bottom of pages.', i:'text', s:'header-footer.html' },
+  { c:'Edit & Annotate', n:'Invert Colors', d:'Create a "dark mode" version of your PDF.', i:'circle-half', s:'invert-colors.html' },
+  { c:'Edit & Annotate', n:'Background Color', d:'Change the background color of your PDF.', i:'palette', s:'background-color.html' },
+  { c:'Edit & Annotate', n:'Change Text Color', d:'Change the color of text in your PDF.', i:'eyedropper', s:'text-color.html' },
+  { c:'Edit & Annotate', n:'Sign PDF', d:'Draw, type, or upload your signature.', i:'pen', s:'sign-pdf.html' },
+  { c:'Edit & Annotate', n:'Add Stamps', d:'Add image stamps to your PDF using the annotation toolbar.', i:'stamp', s:'add-stamps.html' },
+  { c:'Edit & Annotate', n:'Remove Annotations', d:'Strip comments, highlights, and links.', i:'broom', s:'remove-annotations.html' },
+  { c:'Edit & Annotate', n:'Crop PDF', d:'Trim the margins of every page in your PDF.', i:'crop', s:'crop-pdf.html' },
+  { c:'Edit & Annotate', n:'PDF Form Filler', d:'Fill in forms directly in the browser. Also supports XFA forms.', i:'pen', s:'form-filler.html' },
+  { c:'Edit & Annotate', n:'Create PDF Form', d:'Create fillable PDF forms with drag-and-drop text fields.', i:'plus', s:'form-creator.html' },
+  { c:'Edit & Annotate', n:'Remove Blank Pages', d:'Automatically detect and delete blank pages.', i:'minus', s:'remove-blank-pages.html' },
+
+  /* --- Convert to PDF --- */
+  { c:'Convert to PDF', n:'Images to PDF', d:'Convert JPG, PNG, BMP, GIF, TIFF, PNM, PGM, PBM, PPM, PAM, JXR, JPX, JP2, PSD, SVG, HEIC, WebP to PDF.', i:'image', s:'image-to-pdf.html' },
+  { c:'Convert to PDF', n:'JPG to PDF', d:'Create a PDF from JPG, JPEG, and JPEG2000 (JP2/JPX) images.', i:'image', s:'jpg-to-pdf.html' },
+  { c:'Convert to PDF', n:'PNG to PDF', d:'Create a PDF from one or more PNG images.', i:'image', s:'png-to-pdf.html' },
+  { c:'Convert to PDF', n:'WebP to PDF', d:'Create a PDF from one or more WebP images.', i:'image', s:'webp-to-pdf.html' },
+  { c:'Convert to PDF', n:'SVG to PDF', d:'Create a PDF from one or more SVG images.', i:'image', s:'svg-to-pdf.html' },
+  { c:'Convert to PDF', n:'BMP to PDF', d:'Create a PDF from one or more BMP images.', i:'image', s:'bmp-to-pdf.html' },
+  { c:'Convert to PDF', n:'HEIC to PDF', d:'Create a PDF from one or more HEIC images.', i:'mobile', s:'heic-to-pdf.html' },
+  { c:'Convert to PDF', n:'TIFF to PDF', d:'Create a PDF from one or more TIFF images.', i:'image', s:'tiff-to-pdf.html' },
+  { c:'Convert to PDF', n:'Text to PDF', d:'Convert a plain text file into a PDF.', i:'text', s:'txt-to-pdf.html' },
+  { c:'Convert to PDF', n:'Markdown to PDF', d:'Convert Markdown to PDF with live preview and syntax highlighting.', i:'file-code', s:'markdown-to-pdf.html' },
+  { c:'Convert to PDF', n:'JSON to PDF', d:'Convert JSON files to PDF format.', i:'file-code', s:'json-to-pdf.html' },
+  { c:'Convert to PDF', n:'ODT to PDF', d:'Convert ODT (OpenDocument Text) files to PDF.', i:'file-text', s:'odt-to-pdf.html' },
+  { c:'Convert to PDF', n:'CSV to PDF', d:'Convert CSV (Comma-Separated Values) spreadsheets to PDF.', i:'table', s:'csv-to-pdf.html' },
+  { c:'Convert to PDF', n:'RTF to PDF', d:'Convert RTF (Rich Text Format) documents to PDF.', i:'file-text', s:'rtf-to-pdf.html' },
+  { c:'Convert to PDF', n:'Word to PDF', d:'Convert Word documents (DOCX, DOC, ODT) to PDF.', i:'file-text', s:'word-to-pdf.html' },
+  { c:'Convert to PDF', n:'Excel to PDF', d:'Convert Excel spreadsheets (XLSX, XLS, ODS) to PDF.', i:'table', s:'excel-to-pdf.html' },
+  { c:'Convert to PDF', n:'PowerPoint to PDF', d:'Convert PowerPoint presentations (PPTX, PPT, ODP) to PDF.', i:'presentation', s:'powerpoint-to-pdf.html' },
+  { c:'Convert to PDF', n:'XPS to PDF', d:'Convert XPS/OXPS documents to PDF.', i:'scan', s:'xps-to-pdf.html' },
+  { c:'Convert to PDF', n:'MOBI to PDF', d:'Convert MOBI e-books to PDF.', i:'book', s:'mobi-to-pdf.html' },
+  { c:'Convert to PDF', n:'EPUB to PDF', d:'Convert EPUB e-books to PDF.', i:'book', s:'epub-to-pdf.html' },
+  { c:'Convert to PDF', n:'FB2 to PDF', d:'Convert FictionBook (FB2) e-books to PDF.', i:'book', s:'fb2-to-pdf.html' },
+  { c:'Convert to PDF', n:'CBZ to PDF', d:'Convert comic book archives (CBZ/CBR) to PDF.', i:'book', s:'cbz-to-pdf.html' },
+  { c:'Convert to PDF', n:'WPD to PDF', d:'Convert WordPerfect documents (WPD) to PDF.', i:'file-text', s:'wpd-to-pdf.html' },
+  { c:'Convert to PDF', n:'WPS to PDF', d:'Convert WPS Office documents to PDF.', i:'file-text', s:'wps-to-pdf.html' },
+  { c:'Convert to PDF', n:'XML to PDF', d:'Convert XML documents to PDF.', i:'file-code', s:'xml-to-pdf.html' },
+  { c:'Convert to PDF', n:'Pages to PDF', d:'Convert Apple Pages documents to PDF.', i:'file-text', s:'pages-to-pdf.html' },
+  { c:'Convert to PDF', n:'ODG to PDF', d:'Convert OpenDocument Graphics (ODG) to PDF.', i:'image', s:'odg-to-pdf.html' },
+  { c:'Convert to PDF', n:'ODS to PDF', d:'Convert OpenDocument Spreadsheet (ODS) to PDF.', i:'table', s:'ods-to-pdf.html' },
+  { c:'Convert to PDF', n:'ODP to PDF', d:'Convert OpenDocument Presentation (ODP) to PDF.', i:'presentation', s:'odp-to-pdf.html' },
+  { c:'Convert to PDF', n:'PUB to PDF', d:'Convert Microsoft Publisher (PUB) to PDF.', i:'book', s:'pub-to-pdf.html' },
+  { c:'Convert to PDF', n:'VSD to PDF', d:'Convert Microsoft Visio (VSD, VSDX) to PDF.', i:'branch', s:'vsd-to-pdf.html' },
+  { c:'Convert to PDF', n:'PSD to PDF', d:'Convert Adobe Photoshop (PSD) files to PDF. Multiple files supported.', i:'image', s:'psd-to-pdf.html' },
+
+  /* --- Convert from PDF --- */
+  { c:'Convert from PDF', n:'PDF to JPG', d:'Convert each PDF page into a JPG image.', i:'image', s:'pdf-to-jpg.html' },
+  { c:'Convert from PDF', n:'PDF to PNG', d:'Convert each PDF page into a PNG image.', i:'image', s:'pdf-to-png.html' },
+  { c:'Convert from PDF', n:'PDF to WebP', d:'Convert each PDF page into a WebP image.', i:'image', s:'pdf-to-webp.html' },
+  { c:'Convert from PDF', n:'PDF to BMP', d:'Convert each PDF page into a BMP image.', i:'image', s:'pdf-to-bmp.html' },
+  { c:'Convert from PDF', n:'PDF to TIFF', d:'Convert each PDF page into a TIFF image.', i:'image', s:'pdf-to-tiff.html' },
+  { c:'Convert from PDF', n:'PDF to SVG', d:'Convert each PDF page into a scalable vector graphic.', i:'file-code', s:'pdf-to-svg.html' },
+  { c:'Convert from PDF', n:'PDF to CSV', d:'Extract tables from PDF and convert to CSV format.', i:'table', s:'pdf-to-csv.html' },
+  { c:'Convert from PDF', n:'PDF to Excel', d:'Extract tables from PDF and convert to Excel (XLSX).', i:'table', s:'pdf-to-excel.html' },
+  { c:'Convert from PDF', n:'PDF to Greyscale', d:'Convert all colors to black and white.', i:'palette', s:'pdf-to-greyscale.html' },
+  { c:'Convert from PDF', n:'PDF to JSON', d:'Convert PDF files to JSON format.', i:'file-code', s:'pdf-to-json.html' },
+  { c:'Convert from PDF', n:'PDF to Word', d:'Convert PDF files to editable Word documents.', i:'file-text', s:'pdf-to-docx.html' },
+  { c:'Convert from PDF', n:'Extract Images', d:'Extract all embedded images from your PDF files.', i:'download', s:'extract-images.html' },
+  { c:'Convert from PDF', n:'PDF to Markdown', d:'Convert PDF text and tables to Markdown format.', i:'file-code', s:'pdf-to-markdown.html' },
+  { c:'Convert from PDF', n:'Prepare PDF for AI', d:'Extract PDF content as LlamaIndex JSON for RAG/LLM pipelines.', i:'sparkle', s:'prepare-pdf-for-ai.html' },
+  { c:'Convert from PDF', n:'PDF to Text', d:'Extract text from PDF files and save as plain text (.txt).', i:'text', s:'pdf-to-text.html' },
+
+  /* --- Organize & Manage --- */
+  { c:'Organize & Manage', n:'OCR PDF', d:'Make a PDF searchable and copyable.', i:'barcode', s:'ocr-pdf.html' },
+  { c:'Organize & Manage', n:'Merge PDF', d:'Combine multiple PDFs into one file. Preserves Bookmarks.', i:'merge', s:'merge-pdf.html' },
+  { c:'Organize & Manage', n:'Alternate & Mix Pages', d:'Merge PDFs by alternating pages from each PDF. Preserves Bookmarks.', i:'shuffle', s:'alternate-merge.html' },
+  { c:'Organize & Manage', n:'Duplicate & Organize', d:'Duplicate, reorder, and delete pages.', i:'layers', s:'organize-pdf.html' },
+  { c:'Organize & Manage', n:'Add Attachments', d:'Embed one or more files into your PDF.', i:'paperclip', s:'add-attachments.html' },
+  { c:'Organize & Manage', n:'Extract Attachments', d:'Extract all embedded files from PDF(s) as a ZIP.', i:'download', s:'extract-attachments.html' },
+  { c:'Organize & Manage', n:'Edit Attachments', d:'View or remove attachments in your PDF.', i:'paperclip', s:'edit-attachments.html' },
+  { c:'Organize & Manage', n:'PDF Multi Tool', d:'Merge, Split, Organize, Delete, Rotate, Add Blank Pages, Extract and Duplicate in an unified interface.', i:'pen', s:'pdf-multi-tool.html' },
+  { c:'Organize & Manage', n:'PDF OCG', d:'View, toggle, add, and delete OCG layers in your PDF.', i:'layers', s:'pdf-layers.html' },
+  { c:'Organize & Manage', n:'Extract Tables', d:'Extract tables from PDFs as CSV, JSON, or Markdown.', i:'table', s:'extract-tables.html' },
+  { c:'Organize & Manage', n:'Split PDF', d:'Extract a range of pages into a new PDF.', i:'scissors', s:'split-pdf.html' },
+  { c:'Organize & Manage', n:'Divide Pages', d:'Divide pages horizontally or vertically.', i:'columns', s:'divide-pages.html' },
+  { c:'Organize & Manage', n:'Extract Pages', d:'Save a selection of pages as new files.', i:'grid', s:'extract-pages.html' },
+  { c:'Organize & Manage', n:'Delete Pages', d:'Remove specific pages from your document.', i:'trash', s:'delete-pages.html' },
+  { c:'Organize & Manage', n:'Add Blank Page', d:'Insert an empty page anywhere in your PDF.', i:'plus', s:'add-blank-page.html' },
+  { c:'Organize & Manage', n:'Reverse Pages', d:'Flip the order of all pages in your document.', i:'list', s:'reverse-pages.html' },
+  { c:'Organize & Manage', n:'Rotate PDF', d:'Turn pages in 90-degree increments.', i:'rotate', s:'rotate-pdf.html' },
+  { c:'Organize & Manage', n:'Rotate by Custom Degrees', d:'Rotate pages by any custom angle.', i:'rotate', s:'rotate-custom.html' },
+  { c:'Organize & Manage', n:'N-Up PDF', d:'Arrange multiple pages onto a single sheet.', i:'grid', s:'n-up-pdf.html' },
+  { c:'Organize & Manage', n:'PDF Booklet', d:'Rearrange pages for double-sided booklet printing.', i:'book', s:'pdf-booklet.html' },
+  { c:'Organize & Manage', n:'Combine to Single Page', d:'Stitch all pages into one continuous scroll.', i:'layers', s:'combine-single-page.html' },
+  { c:'Organize & Manage', n:'View Metadata', d:'Inspect the hidden properties of your PDF.', i:'info', s:'view-metadata.html' },
+  { c:'Organize & Manage', n:'Edit Metadata', d:'Change the author, title, and other properties.', i:'file-code', s:'edit-metadata.html' },
+  { c:'Organize & Manage', n:'PDFs to ZIP', d:'Package multiple PDF files into a ZIP archive.', i:'zip', s:'pdf-to-zip.html' },
+  { c:'Organize & Manage', n:'Compare PDFs', d:'Compare two PDFs side by side.', i:'branch', s:'compare-pdfs.html' },
+  { c:'Organize & Manage', n:'Posterize PDF', d:'Split a large page into multiple smaller pages.', i:'notepad', s:'posterize-pdf.html' },
+
+  /* --- Optimize & Repair --- */
+  { c:'Optimize & Repair', n:'Compress PDF', d:'Reduce the file size of your PDF.', i:'gauge', s:'compress-pdf.html' },
+  { c:'Optimize & Repair', n:'PDF to PDF/A', d:'Convert PDF to PDF/A for long-term archiving.', i:'archive', s:'pdf-to-pdfa.html' },
+  { c:'Optimize & Repair', n:'Fix Page Size', d:'Standardize all pages to a uniform size.', i:'ruler', s:'fix-page-size.html' },
+  { c:'Optimize & Repair', n:'Linearize PDF', d:'Optimize PDF for fast web viewing.', i:'gauge', s:'linearize-pdf.html' },
+  { c:'Optimize & Repair', n:'Page Dimensions', d:'Analyze page size, orientation, and units.', i:'ruler', s:'page-dimensions.html' },
+  { c:'Optimize & Repair', n:'Remove Restrictions', d:'Remove password protection and security restrictions associated with digitally signed PDF files.', i:'link-break', s:'remove-restrictions.html' },
+  { c:'Optimize & Repair', n:'Repair PDF', d:'Recover data from corrupted or damaged PDF files.', i:'wrench', s:'repair-pdf.html' },
+  { c:'Optimize & Repair', n:'Rasterize PDF', d:'Convert PDF to image-based PDF. Flatten layers and remove selectable text.', i:'image', s:'rasterize-pdf.html' },
+
+  /* --- Secure PDF --- */
+  { c:'Secure PDF', n:'Encrypt PDF', d:'Lock your PDF by adding a password.', i:'lock', s:'encrypt-pdf.html' },
+  { c:'Secure PDF', n:'Sanitize PDF', d:'Remove metadata, annotations, scripts, and more.', i:'broom', s:'sanitize-pdf.html' },
+  { c:'Secure PDF', n:'Decrypt PDF', d:'Unlock PDF by removing password protection.', i:'unlock', s:'decrypt-pdf.html' },
+  { c:'Secure PDF', n:'Flatten PDF', d:'Make form fields and annotations non-editable.', i:'layers', s:'flatten-pdf.html' },
+  { c:'Secure PDF', n:'Remove Metadata', d:'Strip hidden data from your PDF.', i:'file-x', s:'remove-metadata.html' },
+  { c:'Secure PDF', n:'Change Permissions', d:'Set or change user permissions on a PDF.', i:'shield', s:'change-permissions.html' }
+];
+
+/* ---------- helpers ---------- */
+function esc(v) {
+  return String(v).replace(/[&<>"']/g, function (ch) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+  });
+}
+
+var headerEl = document.getElementById('topbar');
+var navEl    = document.getElementById('catnav');
+var statusEl = document.getElementById('status');
+var sectionsEl = document.getElementById('sections');
+var noResEl  = document.getElementById('no-results');
+var noResTerm = document.getElementById('no-results-term');
+var searchEl = document.getElementById('search-bar');
+var hintEl   = document.getElementById('shortcut-hint');
+
+/* ---------- build category nav ---------- */
+navEl.innerHTML = CATS.map(function (cat) {
+  return '<a href="#' + cat.id + '" data-cat="' + cat.id + '">' + esc(cat.name) + '</a>';
+}).join('');
+
+/* ---------- build category sections + tool cards ---------- */
+var out = '';
+CATS.forEach(function (cat) {
+  var items = TOOLS.filter(function (t) { return t.c === cat.name; });
+  out += '<section class="category" id="' + cat.id + '">' +
+           '<h2>' + esc(cat.name) + '<span class="count">' + items.length + '</span></h2>' +
+           '<div class="grid">';
+  items.forEach(function (t) {
+    var hay = (t.n + ' ' + t.d + ' ' + t.c).toLowerCase();
+    out += '<a class="tool-card" href="' + BASE + esc(t.s) + '" data-hay="' + esc(hay) + '">' +
+             '<svg class="ic" aria-hidden="true"><use href="#i-' + esc(t.i) + '"/></svg>' +
+             '<h3>' + esc(t.n) + '</h3>' +
+             '<p>' + esc(t.d) + '</p>' +
+           '</a>';
+  });
+  out += '</div></section>';
+});
+sectionsEl.innerHTML = out;
+
+var cards    = Array.prototype.slice.call(document.querySelectorAll('.tool-card'));
+var sections = Array.prototype.slice.call(document.querySelectorAll('.category'));
+var navLinks = Array.prototype.slice.call(navEl.querySelectorAll('a'));
+var TOTAL    = TOOLS.length;
+
+/* ---------- search / filter ---------- */
+function applyFilter(raw) {
+  var q = raw.trim().toLowerCase();
+  var shown = 0;
+
+  cards.forEach(function (card) {
+    var match = !q || card.dataset.hay.indexOf(q) !== -1;
+    card.hidden = !match;
+    if (match) shown++;
+  });
+
+  sections.forEach(function (sec) {
+    sec.hidden = !sec.querySelector('.tool-card:not([hidden])');
+  });
+
+  if (!q) {
+    statusEl.textContent = TOTAL + ' tools in ' + CATS.length + ' categories';
+    noResEl.hidden = true;
+  } else {
+    statusEl.textContent = 'Showing ' + shown + ' of ' + TOTAL + ' tools';
+    noResEl.hidden = shown !== 0;
+    if (shown === 0) noResTerm.textContent = '"' + raw.trim() + '"';
+  }
+  updateActive();
+}
+
+searchEl.addEventListener('input', function () { applyFilter(searchEl.value); });
+
+/* ---------- scroll spy ---------- */
+function updateActive() {
+  var offset = headerEl.offsetHeight + 24;
+  var current = null;
+  sections.forEach(function (sec) {
+    if (!sec.hidden && sec.getBoundingClientRect().top <= offset) current = sec;
+  });
+  navLinks.forEach(function (a) {
+    a.setAttribute('aria-current', current && a.dataset.cat === current.id ? 'true' : 'false');
+  });
+}
+
+var ticking = false;
+window.addEventListener('scroll', function () {
+  if (ticking) return;
+  ticking = true;
+  requestAnimationFrame(function () { ticking = false; updateActive(); });
+}, { passive: true });
+
+/* ---------- header height -> scroll offset ---------- */
+function syncHeaderHeight() {
+  document.documentElement.style.setProperty('--header-h', headerEl.offsetHeight + 'px');
+  updateActive();
+}
+window.addEventListener('resize', syncHeaderHeight);
+window.addEventListener('load', syncHeaderHeight);
+syncHeaderHeight();
+
+/* ---------- nav click: mark active immediately ---------- */
+navLinks.forEach(function (a) {
+  a.addEventListener('click', function () {
+    navLinks.forEach(function (b) { b.setAttribute('aria-current', 'false'); });
+    a.setAttribute('aria-current', 'true');
+  });
+});
+
+/* ---------- keyboard shortcuts ---------- */
+if (/Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent)) {
+  hintEl.textContent = '\u2318 K';
+}
+
+document.addEventListener('keydown', function (e) {
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+    e.preventDefault();
+    searchEl.focus();
+    searchEl.select();
+    return;
+  }
+  if (e.key === '/' && document.activeElement !== searchEl) {
+    e.preventDefault();
+    searchEl.focus();
+    return;
+  }
+  if (e.key === 'Escape' && document.activeElement === searchEl) {
+    searchEl.value = '';
+    applyFilter('');
+    searchEl.blur();
+  }
+});
+
+/* ---------- bersihkan service worker & cache BentoPDF lama ---------- */
+/* SW lama ber-scope "/" bisa mencegat root dan menyajikan app shell dari
+   cache, sehingga katalog tidak pernah tampil. Ini melepasnya sekali. */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function (regs) {
+    regs.forEach(function (r) {
+      var url = (r.active && r.active.scriptURL) || (r.installing && r.installing.scriptURL) || '';
+      if (url.indexOf('sw.js') !== -1) { r.unregister(); }
+    });
+  }).catch(function () {});
+}
+if (window.caches && caches.keys) {
+  caches.keys().then(function (keys) {
+    keys.forEach(function (k) { caches.delete(k); });
+  }).catch(function () {});
+}
+
+/* ---------- init ---------- */
+applyFilter('');
+</script>
+</body>
+</html>

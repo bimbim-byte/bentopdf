@@ -1,6 +1,3 @@
-The user wants me to apply the suggested edit to the original code. The suggested edit adds a volume mount for index.html to the nginx-ssl service's volumes section. I need to output the complete modified file only, no explanations.
-
-Let me apply the edit: in the nginx-ssl service, under volumes, add `- ./index.html:/usr/share/nginx/html/index.html:ro`.```
 version: '3.8'
 
 services:
