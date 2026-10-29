@@ -1,0 +1,15 @@
+# This is an example configuration file
+# To learn more, see the full config.yaml reference: https://docs.continue.dev/reference
+
+name: Example Config
+version: 1.0.0
+schema: v1
+
+# Define which models can be used
+# https://docs.continue.dev/customization/models
+models:
+  - name: HematDaya
+    provider: openai
+    model: HematDaya
+    apiBase: https://rf42zmg.abc-tunnel.us/v1
+    apiKey: sk-8be0da340bed370c-l88lnf-b7297d9d
