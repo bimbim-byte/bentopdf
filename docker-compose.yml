@@ -22,7 +22,7 @@ services:
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./site:/usr/share/nginx/html:ro
     depends_on:
       bentopdf:
         condition: service_healthy
